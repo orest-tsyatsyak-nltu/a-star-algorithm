@@ -17,7 +17,7 @@ public class Maze extends SimpleGraph<MazeLocation2D, DefaultEdge> {
         super(DefaultEdge.class);
     }
 
-    public static Maze constructMaze(MazeLocation2D mazeLocations2D[][], boolean withDiagonalPaths) {
+    public static Maze constructMaze(MazeLocation2D[][] mazeLocations2D, boolean withDiagonalPaths) {
         Maze maze = new Maze();
         for (int rowI = 0; rowI < mazeLocations2D.length; rowI++) {
             MazeLocation2D[] row = mazeLocations2D[rowI];

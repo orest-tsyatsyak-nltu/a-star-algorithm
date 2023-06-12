@@ -3,6 +3,7 @@ package org.example;
 import org.example.maze.Maze;
 import org.example.maze.MazeLocation2D;
 import org.example.maze.MazeLocationState;
+import org.example.maze.MazePuzzle;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -16,69 +17,77 @@ public class App {
 
     public static final String RESET = "\033[0m";
     public static final String GREEN = "\033[0;32m";
-
     public static final String CYAN = "\033[0;36m";
+    public static final String RED = "\033[0;31m";
 
     private static final char WALL_CHARACTER = 'X';
     private static final char PATH_CHARACTER = '0';
 
-    private static final int ROWS = 6;
+    private static final char START_POINT_CHARACTER = 'A';
+    private static final char TARGET_POINT_CHARACTER = 'B';
 
+    private static final int ROWS = 6;
     private static final int COLS = 6;
 
     public static void main(String[] args) {
-        MazeLocation2D[][] mazeMap = getMazeMapFromFile("mazeForVariant9.txt");
-        MazeLocation2D A = new MazeLocation2D(5, 0);
-        MazeLocation2D B = new MazeLocation2D(0, 5);
-        Maze maze = Maze.constructMaze(mazeMap, true);
-        List<MazeLocation2D> path = maze.findPathUsingAStarAlgorithm(A, B);
-        printSolvedMaze(mazeMap, path, A, B);
-        if(path.isEmpty()){
+        MazePuzzle mazePuzzle = getMazePuzzleFromFile("mazeForVariant9.txt");
+        Maze maze = Maze.constructMaze(mazePuzzle.getMazeMap(), true);
+        List<MazeLocation2D> path = maze.findPathUsingAStarAlgorithm(mazePuzzle.getStartPoint(), mazePuzzle.getTargetPoint());
+        printSolvedMaze(mazePuzzle, path);
+        if (path.isEmpty()) {
             System.out.println("There is no path from point A to point B");
         }
     }
 
-    private static MazeLocation2D[][] getMazeMapFromFile(String pathToFile) {
+    private static MazePuzzle getMazePuzzleFromFile(String pathToFile) {
         try (Scanner scanner = new Scanner(new FileInputStream(pathToFile))) {
-            MazeLocation2D mazeLocations2D[][] = new MazeLocation2D[ROWS][COLS];
+            MazeLocation2D[][] mazeMap = new MazeLocation2D[ROWS][COLS];
+            MazeLocation2D startLocation = null;
+            MazeLocation2D targetLocation = null;
             for (int i = 0; i < ROWS; i++) {
                 String row = scanner.nextLine();
                 for (int j = 0; j < COLS; j++) {
-                    MazeLocationState mazeLocationState;
-                    if (row.charAt(j) == PATH_CHARACTER) {
-                        mazeLocationState = MazeLocationState.PASSABLE;
-                    } else {
+                    MazeLocationState mazeLocationState = MazeLocationState.PASSABLE;
+                    if (row.charAt(j) == WALL_CHARACTER) {
                         mazeLocationState = MazeLocationState.NON_PASSABLE;
+                    } else if (row.charAt(j) == START_POINT_CHARACTER) {
+                        startLocation = new MazeLocation2D(i, j);
+                    } else if (row.charAt(j) == TARGET_POINT_CHARACTER) {
+                        targetLocation = new MazeLocation2D(i, j);
                     }
-                    mazeLocations2D[i][j] = new MazeLocation2D(i, j, mazeLocationState);
+                    mazeMap[i][j] = new MazeLocation2D(i, j, mazeLocationState);
                 }
             }
-            return mazeLocations2D;
+            return new MazePuzzle(mazeMap, startLocation, targetLocation);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void printSolvedMaze(MazeLocation2D[][] mazeMap, List<MazeLocation2D> path,
-                                        MazeLocation2D startLocation, MazeLocation2D targetLocation) {
+    private static void printSolvedMaze(MazePuzzle mazePuzzle, List<MazeLocation2D> path) {
+        MazeLocation2D[][] mazeMap = mazePuzzle.getMazeMap();
         for (int i = 0; i < mazeMap.length; i++) {
             for (int j = 0; j < mazeMap[i].length; j++) {
-                if (startLocation.getX() == i && startLocation.getY() == j) {
-                    System.out.print(CYAN + "A" + RESET);
-                } else if (targetLocation.getX() == i && targetLocation.getY() == j) {
-                    System.out.print(CYAN + "B" + RESET);
+                if (mazePuzzle.getStartPoint().hasSameLocation(i, j)) {
+                    printColoredCharacter('A', CYAN);
+                } else if (mazePuzzle.getTargetPoint().hasSameLocation(i, j)) {
+                    printColoredCharacter('B', CYAN);
                 } else if (isPartOfPath(path, i, j)) {
-                    System.out.print(GREEN + "*" + RESET);
+                    printColoredCharacter('*', GREEN);
                 } else {
                     if (mazeMap[i][j].getLocationState().equals(MazeLocationState.PASSABLE)) {
-                        System.out.print(' ');
+                        printColoredCharacter(' ', RESET);
                     } else {
-                        System.out.print(WALL_CHARACTER);
+                        printColoredCharacter(WALL_CHARACTER, RED);
                     }
                 }
             }
             System.out.println();
         }
+    }
+
+    private static void printColoredCharacter(char character, String ansiColor) {
+        System.out.print(ansiColor + character + RESET);
     }
 
     private static boolean isPartOfPath(List<MazeLocation2D> path, int x, int y) {

@@ -45,6 +45,10 @@ public final class MazeLocation2D {
         return y;
     }
 
+    public boolean hasSameLocation(int x, int y) {
+        return this.x == x && this.y == y;
+    }
+
     public MazeLocationState getLocationState() {
         return locationState;
     }
